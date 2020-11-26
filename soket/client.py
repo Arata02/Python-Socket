@@ -1,4 +1,5 @@
 # クライアントを作成
+
 import socket
 import threading
 import re
@@ -15,32 +16,30 @@ endflag = 1
 
 #数字をサーバに送信する
 def game_start(s):
-    print('ゲームが開始されました。')
+    print("ゲームが開始されました.")
     #サーバからの受信用スレッドを作成
     handle_thread = threading.Thread(target=handler, args=(s,), daemon=True)
     handle_thread.start()
     while  endflag > 0:
-        print('数字を入力してください。')
+        print("数字を入力してください.")
         number = input()
         # #送信用データをリトルエンディアンでbyte型 に変換
-        #data = struct.pack("<BBBB", 0,0,0,int(number))
-        #w, x, y, z, a, bの順番
+        #w, x, y, z, a, bの順番でパックする
         data = struct.pack("BBBBBB", int(number),0,0,0,0,0)
         #送信
         print(data)
         s.send(data)
-        print('”{}”を送信しました。\n'.format(number))
+        print('”{}”を送信しました.\n'.format(number))
 
     #スレッドの処理が終わるのを待つ
     handle_thread.join()
 
 
-def end_game(s, point):
+def end_game(point):
     global endflag
     endflag = 0
-    print('ゲームが終了しました。')
-    
-    print('あなたの得点は{}です。'.format(point))
+    print("ゲームが終了しました.")  
+    print("あなたの得点は{}です.".format(point))
 
     #ゲームが終了したら切断する
     remove_conection(s)
@@ -59,13 +58,10 @@ def handler(s):
         data = s.recv(6)
         recvdata = struct.unpack("BBBBBB", data)
 
-        if recvdata[0] == 1:#判定を受け取ったら
-            anyuserid = recvdata[1] + 1
-            number = recvdata[2]
-            point = recvdata[1]
+        print(recvdata)
 
-            #print(recvdata)
-            #print("[受信] 当たりを引きました.")
+        if recvdata[0] == 1:#判定を受け取ったら
+            point = recvdata[1]
             print("貴方の得点{}".format(point))
             # print("その他を引きました.")
             # print("得点")
@@ -75,31 +71,26 @@ def handler(s):
 
         #ゲーム終了が送られてき時
         if recvdata[0] == 128:
-            # rank = recvdata[2]
             point = recvdata[1]
            
             break
-    end_game(s, point)
+    end_game(point)
 
 
 if __name__ == "__main__":
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         #サーバを指定
         s.connect((host, port))
-        print('サーバに接続しました。')
-        print('ゲームが開始されるまで少々お待ちください。\n')
-
-        #data = s.recv(4)
+        print("サーバに接続しました.")
+        print("ゲームが開始されるまで少々お待ちください。\n")
+        
         #受け取ったバイナリをbyte型に変換
-        #recvdata = struct.unpack("<BBBB", data)
-
         data = s.recv(6)
         recvdata = struct.unpack("BBBBBB", data)
 
         #ゲーム開始を受け取ったら
         if recvdata[0] == 0:
             try:
-                userid = recvdata[1] + 1
                 game_start(s)
             except ValueError:                
                 s.close()
@@ -109,4 +100,4 @@ if __name__ == "__main__":
                 sys.exit()
             finally:
                 s.close()
-                print('終了します。')
+                print("終了します.")
